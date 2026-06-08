@@ -320,8 +320,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setState(prev => ({ ...prev, status: 'rolling' }));
     audioSynth.playDiceRoll();
 
-    // Delay for dice rotation animation
-    await new Promise(resolve => setTimeout(resolve, 800 / state.animationSpeed));
+    // Delay for dice rotation animation (matches 0.6s base animation * 1.2 multiplier)
+    await new Promise(resolve => setTimeout(resolve, 720 / state.animationSpeed));
 
     // Determine the rolled value
     let roll = Math.floor(Math.random() * 6) + 1;

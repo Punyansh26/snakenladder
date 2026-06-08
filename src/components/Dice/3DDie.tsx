@@ -55,12 +55,15 @@ export const ThreeDDie: React.FC<DieProps> = ({ value, isRolling, onClick, disab
   // Get rotation for current value
   const rotation = FACE_ROTATIONS[value] || { x: 0, y: 0 };
 
+  // Rolling animation: consistent tumbling with synchronized timing
+  const ROLL_DURATION = 0.6; // Single consistent duration for all properties
+  
   const currentAnimate = isRolling 
     ? {
-        rotateX: [0, 360],
-        rotateY: [0, 360],
-        scale: [1, 1.25, 1],
-        y: [0, -40, 0],
+        rotateX: [0, 180, 360, 540, 720],
+        rotateY: [0, 90, 270, 450, 720],
+        scale: [1, 1.15, 1, 1.15, 1],
+        y: [0, -30, 0, -30, 0],
       }
     : {
         rotateX: rotation.x,
@@ -82,14 +85,15 @@ export const ThreeDDie: React.FC<DieProps> = ({ value, isRolling, onClick, disab
           style={{ transformStyle: 'preserve-3d' }}
           animate={currentAnimate}
           transition={isRolling ? {
-            rotateX: { repeat: Infinity, duration: 0.5, ease: "linear" },
-            rotateY: { repeat: Infinity, duration: 0.7, ease: "linear" },
-            y: { repeat: Infinity, duration: 0.4, ease: "easeInOut" },
-            scale: { repeat: Infinity, duration: 0.4, ease: "easeInOut" },
+            rotateX: { repeat: Infinity, duration: ROLL_DURATION, ease: "linear" },
+            rotateY: { repeat: Infinity, duration: ROLL_DURATION * 1.2, ease: "linear" },
+            y: { repeat: Infinity, duration: ROLL_DURATION * 0.8, ease: "easeInOut" },
+            scale: { repeat: Infinity, duration: ROLL_DURATION * 0.8, ease: "easeInOut" },
           } : {
             type: 'spring',
-            stiffness: 150,
-            damping: 15,
+            stiffness: 200,
+            damping: 20,
+            mass: 0.8,
           }}
         >
           {/* Faces of the die */}
