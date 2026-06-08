@@ -5,7 +5,7 @@ class AudioSynthManager {
   private musicVolume: number = 0.3;
   private sfxVolume: number = 0.5;
   private isMuted: boolean = false;
-  private musicIntervalId: any = null;
+  private musicIntervalId: ReturnType<typeof setInterval> | null = null;
   private isMusicPlaying: boolean = false;
   private activeMusicSources: Array<{ osc: OscillatorNode; gain: GainNode }> = [];
 
@@ -15,7 +15,7 @@ class AudioSynthManager {
 
   private initContext() {
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
         
@@ -309,7 +309,7 @@ class AudioSynthManager {
     this.activeMusicSources.forEach(src => {
       try {
         src.osc.stop();
-      } catch (e) {
+      } catch {
         // Already stopped
       }
     });
