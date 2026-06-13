@@ -336,6 +336,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else if (currentActivePowerUp === 'boost') {
       finalRoll = roll + 2;
       diceType = 'boost';
+    } else if (currentActivePowerUp === 'reroll') {
+      const roll2 = Math.floor(Math.random() * 6) + 1;
+      roll = Math.max(roll, roll2);
+      finalRoll = roll;
     }
 
     const activePlayerId = state.currentTurn;
@@ -349,6 +353,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       rollMsg += ` (+2 Boost = ${finalRoll})`;
     } else if (currentActivePowerUp === 'safe') {
       rollMsg += ` (Safe Roll)`;
+    } else if (currentActivePowerUp === 'reroll') {
+      rollMsg += ` (Reroll – best of two)`;
     }
 
     let nextHistory = addLog(state.history, activePlayer.id, activePlayer.name, rollMsg, 'dice');
@@ -449,31 +455,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       targetPos = landingCheck.destination;
     } else if (landingCheck.type === 'snake') {
-      // Landed on snake. Check if they have shield!
-      const shield = activePlayer.powerups.find(pu => pu.type === 'shield');
-      const hasShield = shield && shield.count > 0;
+      // Landed on snake. Shield was pre-activated this turn if activePowerUp === 'shield'
+      // (activatePowerUp already decremented the count when the player clicked Shield)
+      const hasShield = currentActivePowerUp === 'shield';
 
       if (hasShield) {
-        // Shield saves the day! Consume shield
-        setState(prev => {
-          const updatedPlayers = prev.players.map(p => {
-            if (p.id === activePlayerId) {
-              return {
-                ...p,
-                powerups: p.powerups.map(pu => pu.type === 'shield' ? { ...pu, count: pu.count - 1 } : pu)
-              };
-            }
-            return p;
-          });
-          const logMsg = `🛡️ Snake at ${targetPos} blocked by Shield! ${activePlayer.name} stays safe.`;
-          const updatedHistory = addLog(prev.history, activePlayerId, activePlayer.name, logMsg, 'powerup');
-          return {
-            ...prev,
-            players: updatedPlayers,
-            history: updatedHistory
-          };
-        });
-        
+        // Shield saves the day! Count was already consumed by activatePowerUp.
+        const logMsg = `🛡️ Snake at ${targetPos} blocked by Shield! ${activePlayer.name} stays safe.`;
+        nextHistory = addLog(nextHistory, activePlayerId, activePlayer.name, logMsg, 'powerup');
+
         // Play click/block sound
         audioSynth.playClick();
         if (activePlayer.isHuman) {
@@ -520,6 +510,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (activePlayer.isHuman && state.mode === 'PvC' && state.difficulty === 'impossible') {
         unlockAchievement('ai_crusher');
       }
+      // Check lucky_roller for winning roll being a six (wrap-up setState is skipped on win)
+      if (isSix && activePlayer.isHuman) {
+        const sixesCount = (state.stats.sixesRolled[activePlayerId] || 0) + 1;
+        if (sixesCount >= 3) {
+          unlockAchievement('lucky_roller');
+        }
+      }
 
       setState(prev => {
         const historyRecord = {
@@ -538,6 +535,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
           matchHistory: [historyRecord, ...prev.matchHistory].slice(0, 10),
           stats: {
             ...prev.stats,
+            turns: prev.stats.turns + 1,
+            sixesRolled: updatedSixes,
             endTime: Date.now()
           }
         };
